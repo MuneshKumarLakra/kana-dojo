@@ -116,19 +116,19 @@ export default function TranslationHistory({
         </div>
         <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
           <AlertDialogTrigger asChild>
-            <button
+            <ActionButton
+              colorScheme='secondary'
+              borderRadius='lg'
+              borderBottomThickness={4}
               className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer',
-                'text-sm font-medium',
-                'text-[var(--secondary-color)] hover:text-red-500',
-                'bg-[var(--background-color)] border border-[var(--border-color)]',
-                'hover:border-red-500/50 hover:bg-red-500/10',
-                'transition-all duration-200'
+                'px-4 py-2 text-sm w-auto',
+                'bg-red-500 border-red-700 text-[var(--background-color)]',
+                'hover:bg-red-600'
               )}
             >
               <Trash2 className='h-4 w-4' />
               Clear All
-            </button>
+            </ActionButton>
           </AlertDialogTrigger>
           <AlertDialogContent
             className={cn(
@@ -218,15 +218,16 @@ export default function TranslationHistory({
             </div>
 
             {/* Delete button */}
-            <button
+            <ActionButton
+              colorScheme='secondary'
+              borderRadius='lg'
+              borderBottomThickness={2}
               className={cn(
-                'h-8 w-8 rounded-lg cursor-pointer',
-                'flex items-center justify-center flex-shrink-0',
+                '!w-9 !min-w-9 h-9 !p-0 flex-shrink-0',
                 'opacity-0 group-hover:opacity-100',
-                'bg-[var(--card-color)] border border-[var(--border-color)]',
-                'text-[var(--secondary-color)] hover:text-red-500',
-                'hover:border-red-500/50 hover:bg-red-500/10',
-                'transition-all duration-200'
+                'bg-red-500 border-red-700 text-[var(--background-color)]',
+                'hover:bg-red-600',
+                'transition-opacity duration-200'
               )}
               onClick={e => {
                 e.stopPropagation();
@@ -235,7 +236,7 @@ export default function TranslationHistory({
               aria-label='Delete entry'
             >
               <X className='h-4 w-4' />
-            </button>
+            </ActionButton>
           </div>
         ))}
       </div>
