@@ -31,8 +31,10 @@ const VocabInputGame = ({
   isHidden,
   isReverse = false
 }: VocabInputGameProps) => {
-  const score = useStatsStore(state => state.score);
-  const setScore = useStatsStore(state => state.setScore);
+  const { score, setScore } = useStatsStore(state => ({
+    score: state.score,
+    setScore: state.setScore
+  }));
 
   const speedStopwatch = useStopwatch({ autoStart: false });
 

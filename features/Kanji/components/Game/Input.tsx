@@ -33,8 +33,10 @@ const KanjiInputGame = ({
   isHidden,
   isReverse = false
 }: KanjiInputGameProps) => {
-  const score = useStatsStore(state => state.score);
-  const setScore = useStatsStore(state => state.setScore);
+  const { score, setScore } = useStatsStore(state => ({
+    score: state.score,
+    setScore: state.setScore
+  }));
 
   const speedStopwatch = useStopwatch({ autoStart: false });
 

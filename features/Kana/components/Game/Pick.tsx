@@ -85,8 +85,10 @@ const PickGame = ({ isHidden }: PickGameProps) => {
     wrongsToDecrease: 2
   });
 
-  const score = useStatsStore((state) => state.score);
-  const setScore = useStatsStore((state) => state.setScore);
+  const { score, setScore } = useStatsStore(state => ({
+    score: state.score,
+    setScore: state.setScore
+  }));
 
   const speedStopwatch = useStopwatch({ autoStart: false });
 
@@ -164,7 +166,7 @@ const PickGame = ({ isHidden }: PickGameProps) => {
     : selectedPairs2[correctRomajiCharReverse];
 
   // Get incorrect options based on mode and current option count
-  const getIncorrectOptions = (count: number) => {
+  const getIncorrectOptions = useCallback((count: number) => {
     const incorrectCount = count - 1; // One slot is for the correct answer
     if (!isReverse) {
       const { [correctKanaChar]: _, ...incorrectPairs } = selectedPairs;
@@ -181,7 +183,7 @@ const PickGame = ({ isHidden }: PickGameProps) => {
         .sort(() => random.real(0, 1) - 0.5)
         .slice(0, incorrectCount);
     }
-  };
+  }, [isReverse, correctKanaChar, correctRomajiCharReverse, selectedPairs, selectedPairs1, selectedPairs2]);
 
   const [shuffledVariants, setShuffledVariants] = useState(() => {
     const incorrectOptions = getIncorrectOptions(optionCount);
@@ -214,7 +216,7 @@ const PickGame = ({ isHidden }: PickGameProps) => {
     if (isReverse) {
       speedStopwatch.start();
     }
-  }, [isReverse ? correctRomajiCharReverse : correctKanaChar, optionCount]);
+  }, [isReverse, correctRomajiCharReverse, correctKanaChar, correctRomajiChar, correctKanaCharReverse, optionCount, getIncorrectOptions, speedStopwatch]);
 
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -244,10 +246,6 @@ const PickGame = ({ isHidden }: PickGameProps) => {
       bottomRow: shuffledVariants.slice(3)
     };
   }, [shuffledVariants]);
-
-  if (!selectedKana || selectedKana.length === 0) {
-    return null;
-  }
 
   const handleCorrectAnswer = useCallback((correctChar: string) => {
     speedStopwatch.pause();
@@ -349,6 +347,10 @@ const PickGame = ({ isHidden }: PickGameProps) => {
 
   const displayChar = isReverse ? correctRomajiCharReverse : correctKanaChar;
   const gameMode = 'pick';
+
+  if (!selectedKana || selectedKana.length === 0) {
+    return null;
+  }
 
   return (
     <div

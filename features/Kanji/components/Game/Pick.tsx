@@ -1,6 +1,6 @@
 'use client';
 import clsx from 'clsx';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { CircleCheck, CircleX } from 'lucide-react';
 import { Random } from 'random-js';
 import { IKanjiObj } from '@/features/Kanji/store/useKanjiStore';
@@ -24,6 +24,76 @@ const random = new Random();
 // Get the global adaptive selector for weighted character selection
 const adaptiveSelector = getGlobalAdaptiveSelector();
 
+// Memoized option button component to prevent unnecessary re-renders
+interface OptionButtonProps {
+  option: string;
+  index: number;
+  isWrong: boolean;
+  isReverse: boolean;
+  correctChar: string;
+  kanjiObjMap: Map<string, IKanjiObj>;
+  onClick: (option: string) => void;
+  buttonRef?: (elem: HTMLButtonElement | null) => void;
+}
+
+const OptionButton = memo(({
+  option,
+  index,
+  isWrong,
+  isReverse,
+  kanjiObjMap,
+  onClick,
+  buttonRef
+}: OptionButtonProps) => {
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      disabled={isWrong}
+      className={clsx(
+        isReverse
+          ? 'w-1/3 md:w-1/4 lg:w-1/5 justify-center text-5xl'
+          : 'w-full md:w-1/2 pl-8 justify-start text-3xl md:text-4xl',
+        ' py-5   rounded-xl flex flex-row  items-center gap-1.5',
+        buttonBorderStyles,
+        'text-[var(--border-color)]',
+        ' border-b-4',
+        isWrong &&
+          'hover:bg-[var(--card-color)] border-[var(--border-color)]',
+        !isWrong &&
+          'text-[var(--secondary-color)] border-[var(--secondary-color)]/50 hover:border-[var(--secondary-color)]'
+      )}
+      onClick={() => onClick(option)}
+      lang={isReverse ? 'ja' : undefined}
+    >
+      <span className={clsx(isReverse ? '' : 'flex-1 text-left')}>
+        <FuriganaText
+          text={option}
+          reading={
+            isReverse
+              ? kanjiObjMap.get(option)?.onyomi[0] ||
+                kanjiObjMap.get(option)?.kunyomi[0]
+              : undefined
+          }
+        />
+      </span>
+      <span
+        className={clsx(
+          'hidden lg:inline text-xs rounded-full bg-[var(--border-color)] px-1',
+          isReverse ? '' : 'mr-4',
+          isWrong
+            ? 'text-[var(--border-color)]'
+            : 'text-[var(--secondary-color)]'
+        )}
+      >
+        {index + 1}
+      </span>
+    </button>
+  );
+});
+
+OptionButton.displayName = 'OptionButton';
+
 interface KanjiPickGameProps {
   selectedKanjiObjs: IKanjiObj[];
   isHidden: boolean;
@@ -32,8 +102,10 @@ interface KanjiPickGameProps {
 const KanjiPickGame = ({ selectedKanjiObjs, isHidden }: KanjiPickGameProps) => {
   const { isReverse, decideNextMode, recordWrongAnswer } =
     useSmartReverseMode();
-  const score = useStatsStore(state => state.score);
-  const setScore = useStatsStore(state => state.setScore);
+  const { score, setScore } = useStatsStore(state => ({
+    score: state.score,
+    setScore: state.setScore
+  }));
 
   const speedStopwatch = useStopwatch({ autoStart: false });
 
@@ -272,54 +344,19 @@ const KanjiPickGame = ({ selectedKanjiObjs, isHidden }: KanjiPickGameProps) => {
             )}
           >
             {shuffledOptions.map((option, i) => (
-              <button
-                ref={elem => {
+              <OptionButton
+                key={`${correctChar}-${option}-${i}`}
+                option={option}
+                index={i}
+                isWrong={wrongSelectedAnswers.includes(option)}
+                isReverse={isReverse}
+                correctChar={correctChar}
+                kanjiObjMap={kanjiObjMap}
+                onClick={handleOptionClick}
+                buttonRef={elem => {
                   buttonRefs.current[i] = elem;
                 }}
-                key={`${correctChar}-${option}-${i}`}
-                type="button"
-                disabled={wrongSelectedAnswers.includes(option)}
-                className={clsx(
-                  isReverse
-                    ? 'w-1/3 md:w-1/4 lg:w-1/5 justify-center text-5xl'
-                    : 'w-full md:w-1/2 pl-8 justify-start text-3xl md:text-4xl',
-                  ' py-5   rounded-xl flex flex-row  items-center gap-1.5',
-                  buttonBorderStyles,
-                  'text-[var(--border-color)]',
-
-                  ' border-b-4',
-
-                  wrongSelectedAnswers.includes(option) &&
-                    'hover:bg-[var(--card-color)] border-[var(--border-color)]',
-                  !wrongSelectedAnswers.includes(option) &&
-                    'text-[var(--secondary-color)] border-[var(--secondary-color)]/50 hover:border-[var(--secondary-color)]'
-                )}
-                onClick={() => handleOptionClick(option)}
-                lang={isReverse ? 'ja' : undefined}
-              >
-                <span className={clsx(isReverse ? '' : 'flex-1 text-left')}>
-                  <FuriganaText
-                    text={option}
-                    reading={
-                      isReverse
-                        ? kanjiObjMap.get(option)?.onyomi[0] ||
-                          kanjiObjMap.get(option)?.kunyomi[0]
-                        : undefined
-                    }
-                  />
-                </span>
-                <span
-                  className={clsx(
-                    'hidden lg:inline text-xs rounded-full bg-[var(--border-color)] px-1',
-                    isReverse ? '' : 'mr-4',
-                    wrongSelectedAnswers.includes(option)
-                      ? 'text-[var(--border-color)]'
-                      : 'text-[var(--secondary-color)]'
-                  )}
-                >
-                  {i + 1}
-                </span>
-              </button>
+              />
             ))}
           </div>
 

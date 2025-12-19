@@ -1,6 +1,6 @@
 'use client';
 import clsx from 'clsx';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { CircleCheck, CircleX } from 'lucide-react';
 import { Random } from 'random-js';
 import { IVocabObj } from '@/features/Vocabulary/store/useVocabStore';
@@ -30,6 +30,80 @@ const containsKanji = (text: string): boolean => {
   return /[\u4E00-\u9FAF]/.test(text);
 };
 
+// Memoized option button component to prevent unnecessary re-renders
+interface OptionButtonProps {
+  option: string;
+  index: number;
+  isWrong: boolean;
+  isReverse: boolean;
+  quizType: 'meaning' | 'reading';
+  wordObjMap: Map<string, IVocabObj>;
+  onClick: (option: string) => void;
+  buttonRef?: (elem: HTMLButtonElement | null) => void;
+}
+
+const OptionButton = memo(({
+  option,
+  index,
+  isWrong,
+  isReverse,
+  quizType,
+  wordObjMap,
+  onClick,
+  buttonRef
+}: OptionButtonProps) => {
+  const optionLang = quizType === 'reading' ? 'ja' : isReverse ? 'ja' : undefined;
+
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      disabled={isWrong}
+      className={clsx(
+        'py-5 pl-8 rounded-xl w-full md:w-1/2 flex flex-row justify-start items-center gap-1.5',
+        buttonBorderStyles,
+        'active:scale-95 md:active:scale-98 active:duration-200',
+        'text-[var(--border-color)]',
+        ' border-b-4',
+        isReverse ? 'text-4xl' : 'text-3xl',
+        isWrong &&
+          'hover:bg-[var(--card-color)] border-[var(--border-color)]',
+        !isWrong &&
+          'text-[var(--secondary-color)] border-[var(--secondary-color)]/50 hover:border-[var(--secondary-color)]'
+      )}
+      onClick={() => onClick(option)}
+      lang={optionLang}
+    >
+      <span className="flex-1 text-left">
+        {isReverse || quizType === 'meaning' ? (
+          <FuriganaText
+            text={option}
+            reading={
+              isReverse
+                ? wordObjMap.get(option)?.reading
+                : undefined
+            }
+          />
+        ) : (
+          <span>{option}</span>
+        )}
+      </span>
+      <span
+        className={clsx(
+          'hidden lg:inline text-xs rounded-full bg-[var(--border-color)] px-1 mr-4',
+          isWrong
+            ? 'text-[var(--border-color)]'
+            : 'text-[var(--secondary-color)]'
+        )}
+      >
+        {index + 1}
+      </span>
+    </button>
+  );
+});
+
+OptionButton.displayName = 'OptionButton';
+
 interface VocabPickGameProps {
   selectedWordObjs: IVocabObj[];
   isHidden: boolean;
@@ -39,8 +113,10 @@ const VocabPickGame = ({ selectedWordObjs, isHidden }: VocabPickGameProps) => {
   const hasWords = !!selectedWordObjs && selectedWordObjs.length > 0;
   const { isReverse, decideNextMode, recordWrongAnswer } =
     useSmartReverseMode();
-  const score = useStatsStore(state => state.score);
-  const setScore = useStatsStore(state => state.setScore);
+  const { score, setScore } = useStatsStore(state => ({
+    score: state.score,
+    setScore: state.setScore
+  }));
 
   const speedStopwatch = useStopwatch({ autoStart: false });
 
@@ -312,55 +388,19 @@ const VocabPickGame = ({ selectedWordObjs, isHidden }: VocabPickGameProps) => {
             )}
           >
             {shuffledOptions.map((option, i) => (
-              <button
-                ref={elem => {
+              <OptionButton
+                key={`${correctChar}-${option}-${i}`}
+                option={option}
+                index={i}
+                isWrong={wrongSelectedAnswers.includes(option)}
+                isReverse={isReverse}
+                quizType={quizType}
+                wordObjMap={wordObjMap}
+                onClick={handleOptionClick}
+                buttonRef={elem => {
                   buttonRefs.current[i] = elem;
                 }}
-                key={`${correctChar}-${option}-${i}`}
-                type="button"
-                disabled={wrongSelectedAnswers.includes(option)}
-                className={clsx(
-                  'py-5 pl-8 rounded-xl w-full md:w-1/2 flex flex-row justify-start items-center gap-1.5',
-                  buttonBorderStyles,
-                  'active:scale-95 md:active:scale-98 active:duration-200',
-                  'text-[var(--border-color)]',
-                  ' border-b-4',
-
-                  isReverse ? 'text-4xl' : 'text-3xl',
-                  wrongSelectedAnswers.includes(option) &&
-                    'hover:bg-[var(--card-color)] border-[var(--border-color)]',
-                  !wrongSelectedAnswers.includes(option) &&
-                    'text-[var(--secondary-color)] border-[var(--secondary-color)]/50 hover:border-[var(--secondary-color)]'
-                )}
-                onClick={() => handleOptionClick(option)}
-                lang={optionLang}
-              >
-                {/* Only use FuriganaText when we need furigana (reverse mode or meaning quiz) */}
-                <span className="flex-1 text-left">
-                  {isReverse || quizType === 'meaning' ? (
-                    <FuriganaText
-                      text={option}
-                      reading={
-                        isReverse
-                          ? wordObjMap.get(option)?.reading
-                          : undefined
-                      }
-                    />
-                  ) : (
-                    <span>{option}</span>
-                  )}
-                </span>
-                <span
-                  className={clsx(
-                    'hidden lg:inline text-xs rounded-full bg-[var(--border-color)] px-1 mr-4',
-                    wrongSelectedAnswers.includes(option)
-                      ? 'text-[var(--border-color)]'
-                      : 'text-[var(--secondary-color)]'
-                  )}
-                >
-                  {i + 1}
-                </span>
-              </button>
+              />
             ))}
           </div>
 

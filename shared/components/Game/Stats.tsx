@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import clsx from 'clsx';
 import {
   Hourglass,
@@ -66,45 +66,66 @@ const Stats: React.FC = () => {
     characterScores: state.characterScores
   }));
 
-  // Calculate time
-  const totalMinutes: number = Math.floor(totalMilliseconds / 60000);
-  const seconds: string = ((totalMilliseconds / 1000) % 60).toFixed(0);
-  const timeDisplay: string = `${totalMinutes}m ${seconds}s`;
+  // Memoized stat calculations
+  const stats = useMemo(() => {
+    // Calculate time
+    const totalMinutes = Math.floor(totalMilliseconds / 60000);
+    const seconds = ((totalMilliseconds / 1000) % 60).toFixed(0);
+    const timeDisplay = `${totalMinutes}m ${seconds}s`;
 
-  // Calculate accuracy metrics
-  const totalAnswers: number = numCorrectAnswers + numWrongAnswers;
-  const accuracy: number =
-    totalAnswers > 0 ? (numCorrectAnswers / totalAnswers) * 100 : 0;
-  const ciRatio: number =
-    numWrongAnswers > 0
-      ? numCorrectAnswers / numWrongAnswers
-      : numCorrectAnswers > 0
-      ? Infinity
-      : 0;
+    // Calculate accuracy metrics
+    const totalAnswers = numCorrectAnswers + numWrongAnswers;
+    const accuracy =
+      totalAnswers > 0 ? (numCorrectAnswers / totalAnswers) * 100 : 0;
+    const ciRatio =
+      numWrongAnswers > 0
+        ? numCorrectAnswers / numWrongAnswers
+        : numCorrectAnswers > 0
+        ? Infinity
+        : 0;
 
-  // Calculate timing metrics
-  const hasAnswers: boolean = correctAnswerTimes.length > 0;
-  const avgTime: string | null = hasAnswers
-    ? (
-        correctAnswerTimes.reduce((sum: number, t: number) => sum + t, 0) /
-        correctAnswerTimes.length
-      ).toFixed(2)
-    : null;
-  const fastestTime: string | null = hasAnswers
-    ? Math.min(...correctAnswerTimes).toFixed(2)
-    : null;
-  const slowestTime: string | null = hasAnswers
-    ? Math.max(...correctAnswerTimes).toFixed(2)
-    : null;
+    // Calculate timing metrics
+    const hasAnswers = correctAnswerTimes.length > 0;
+    const avgTime = hasAnswers
+      ? (
+          correctAnswerTimes.reduce((sum, t) => sum + t, 0) /
+          correctAnswerTimes.length
+        ).toFixed(2)
+      : null;
+    const fastestTime = hasAnswers
+      ? Math.min(...correctAnswerTimes).toFixed(2)
+      : null;
+    const slowestTime = hasAnswers
+      ? Math.max(...correctAnswerTimes).toFixed(2)
+      : null;
 
-  // Calculate character metrics
-  const uniqueChars: number = [...new Set(characterHistory)].length;
-  const {
-    highestCorrectChars,
-    highestCorrectCharsValue,
-    highestWrongChars,
-    highestWrongCharsValue
-  } = findHighestCounts(characterScores);
+    // Calculate character metrics
+    const uniqueChars = [...new Set(characterHistory)].length;
+    const {
+      highestCorrectChars,
+      highestCorrectCharsValue,
+      highestWrongChars,
+      highestWrongCharsValue
+    } = findHighestCounts(characterScores);
+
+    return {
+      totalMinutes,
+      seconds,
+      timeDisplay,
+      totalAnswers,
+      accuracy,
+      ciRatio,
+      hasAnswers,
+      avgTime,
+      fastestTime,
+      slowestTime,
+      uniqueChars,
+      highestCorrectChars,
+      highestCorrectCharsValue,
+      highestWrongChars,
+      highestWrongCharsValue
+    };
+  }, [totalMilliseconds, numCorrectAnswers, numWrongAnswers, correctAnswerTimes, characterHistory, characterScores]);
 
   const formatValue = (
     value: string | number | null | undefined,
@@ -148,7 +169,7 @@ const Stats: React.FC = () => {
   );
 
   const generalStats: StatItem[] = [
-    { label: 'Training Time', value: timeDisplay, Icon: Hourglass },
+    { label: 'Training Time', value: stats.timeDisplay, Icon: Hourglass },
     {
       label: 'Correct Answers',
       value: formatValue(numCorrectAnswers),
@@ -161,26 +182,26 @@ const Stats: React.FC = () => {
     },
     {
       label: 'Accuracy',
-      value: formatValue(accuracy.toFixed(1), '%'),
+      value: formatValue(stats.accuracy.toFixed(1), '%'),
       Icon: Target
     }
   ];
 
   const answerStats: StatItem[] = [
-    { label: 'Average Time', value: formatValue(avgTime, 's'), Icon: Timer },
+    { label: 'Average Time', value: formatValue(stats.avgTime, 's'), Icon: Timer },
     {
       label: 'Fastest Answer',
-      value: formatValue(fastestTime, 's'),
+      value: formatValue(stats.fastestTime, 's'),
       Icon: Flame
     },
     {
       label: 'Slowest Answer',
-      value: formatValue(slowestTime, 's'),
+      value: formatValue(stats.slowestTime, 's'),
       Icon: Clock
     },
     {
       label: 'Correct/Incorrect Ratio',
-      value: formatValue(ciRatio === Infinity ? '∞' : ciRatio.toFixed(2)),
+      value: formatValue(stats.ciRatio === Infinity ? '∞' : stats.ciRatio.toFixed(2)),
       Icon: TrendingUp
     }
   ];
@@ -193,22 +214,22 @@ const Stats: React.FC = () => {
     },
     {
       label: 'Unique Characters',
-      value: formatValue(uniqueChars),
+      value: formatValue(stats.uniqueChars),
       Icon: Shapes
     },
     {
       label: 'Easiest Characters',
       value:
-        highestCorrectChars.length > 0
-          ? `${highestCorrectChars.join(', ')} (${highestCorrectCharsValue})`
+        stats.highestCorrectChars.length > 0
+          ? `${stats.highestCorrectChars.join(', ')} (${stats.highestCorrectCharsValue})`
           : '~',
       Icon: Clover
     },
     {
       label: 'Hardest Characters',
       value:
-        highestWrongChars.length > 0
-          ? `${highestWrongChars.join(', ')} (${highestWrongCharsValue})`
+        stats.highestWrongChars.length > 0
+          ? `${stats.highestWrongChars.join(', ')} (${stats.highestWrongCharsValue})`
           : '~',
       Icon: HeartCrack
     }

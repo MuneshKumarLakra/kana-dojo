@@ -9,9 +9,10 @@ import useStatsStore from '@/features/Progress/store/useStatsStore';
 import Stats from '@/shared/components/Game/Stats';
 
 const Game = () => {
-  const showStats = useStatsStore(state => state.showStats);
-
-  const resetStats = useStatsStore(state => state.resetStats);
+  const { showStats, resetStats } = useStatsStore(state => ({
+    showStats: state.showStats,
+    resetStats: state.resetStats
+  }));
 
   const gameMode = useVocabStore(state => state.selectedGameModeVocab);
   const selectedVocabObjs = useVocabStore(state => state.selectedVocabObjs);

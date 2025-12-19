@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import useStatsStore from '@/features/Progress/store/useStatsStore';
 import { Trophy, Target, TrendingUp, Trash, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
@@ -69,27 +69,30 @@ export default function SimpleProgress() {
   const overallAccuracy =
     totalQuestions > 0 ? (allTimeStats.totalCorrect / totalQuestions) * 100 : 0;
 
-  // Get most difficult characters (lowest accuracy with at least 5 attempts)
-  const difficultCharacters = Object.entries(allTimeStats.characterMastery)
-    .map(([char, stats]) => ({
-      character: char,
-      total: stats.correct + stats.incorrect,
-      accuracy: stats.correct / (stats.correct + stats.incorrect)
-    }))
-    .filter(char => char.total >= 5)
-    .sort((a, b) => a.accuracy - b.accuracy)
-    .slice(0, 5);
+  // Memoized character analysis - single pass through data
+  const { difficultCharacters, masteredCharacters } = useMemo(() => {
+    const characterData = Object.entries(allTimeStats.characterMastery).map(
+      ([char, stats]) => ({
+        character: char,
+        total: stats.correct + stats.incorrect,
+        accuracy: stats.correct / (stats.correct + stats.incorrect)
+      })
+    );
 
-  // Get mastered characters (high accuracy with many attempts)
-  const masteredCharacters = Object.entries(allTimeStats.characterMastery)
-    .map(([char, stats]) => ({
-      character: char,
-      total: stats.correct + stats.incorrect,
-      accuracy: stats.correct / (stats.correct + stats.incorrect)
-    }))
-    .filter(char => char.total >= 10 && char.accuracy >= 0.9)
-    .sort((a, b) => b.accuracy - a.accuracy)
-    .slice(0, 5);
+    // Get most difficult characters (lowest accuracy with at least 5 attempts)
+    const difficult = characterData
+      .filter(char => char.total >= 5)
+      .sort((a, b) => a.accuracy - b.accuracy)
+      .slice(0, 5);
+
+    // Get mastered characters (high accuracy with many attempts)
+    const mastered = characterData
+      .filter(char => char.total >= 10 && char.accuracy >= 0.9)
+      .sort((a, b) => b.accuracy - a.accuracy)
+      .slice(0, 5);
+
+    return { difficultCharacters: difficult, masteredCharacters: mastered };
+  }, [allTimeStats.characterMastery]);
 
   return (
     <div className='space-y-6'>
