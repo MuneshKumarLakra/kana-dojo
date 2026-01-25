@@ -177,12 +177,28 @@ module.exports = {
         'Otherwise, it will be automatically closed in **6 hours** and made available for others to claim.',
       footer: 'Need help? Just ask! 🙌',
     },
+    unassignedWarning: {
+      greeting: '👋 **Heads up!**',
+      body: 'This unassigned issue has been inactive for 12 hours.',
+      action:
+        'If you want to work on it, please comment to claim it! We will auto-assign you.',
+      consequence:
+        'Otherwise, it will be automatically closed in **6 hours** until someone claims it.',
+      footer: 'Want to help? Just comment below! 🙌',
+    },
     closed: {
       title: '🕐 **This issue has been automatically closed**',
       reason: 'due to 18 hours of inactivity.',
       reassurance:
         "Don't worry—the contribution opportunity will be re-posted for someone else to claim.",
       footer: 'Thanks for your interest in contributing to KanaDojo! 🙏',
+    },
+    unassignedClosed: {
+      title: '🕐 **This unassigned issue has been automatically closed**',
+      reason: 'due to 18 hours without activity or a claim.',
+      reassurance:
+        "Don't worry—this task will be re-posted for someone else to claim.",
+      footer: 'Interested in contributing? Keep an eye out for new issues! 🙏',
     },
   },
 

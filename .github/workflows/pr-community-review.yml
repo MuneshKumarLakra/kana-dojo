@@ -58,6 +58,7 @@ jobs:
             let isValid = false;
             let validationType = null;
             let errors = [];
+            let warnings = [];
             let linkedIssue = null;
             let foundIssue = null;
 
@@ -219,7 +220,7 @@ jobs:
                   }
                   
                   if (!targetIssue) {
-                    errors.push('Could not find a matching community issue for this theme');
+                    warnings.push('Could not find a matching community issue for this theme');
                   }
                 }
               } catch (e) {
@@ -260,7 +261,7 @@ jobs:
                   }
                   
                   if (!targetIssue) {
-                    errors.push('Could not find a matching community issue for this fact');
+                    warnings.push('Could not find a matching community issue for this fact');
                   }
                 }
               } catch (e) {
@@ -303,7 +304,7 @@ jobs:
                   }
                   
                   if (!targetIssue) {
-                    errors.push('Could not find a matching community issue for this proverb');
+                    warnings.push('Could not find a matching community issue for this proverb');
                   }
                 }
               } catch (e) {
@@ -350,7 +351,7 @@ jobs:
                   }
 
                   if (!targetIssue) {
-                    errors.push('Could not find a matching community issue for this trivia question');
+                    warnings.push('Could not find a matching community issue for this trivia question');
                   }
                 }
               } catch (e) {
@@ -390,7 +391,7 @@ jobs:
                   }
 
                   if (!targetIssue) {
-                    errors.push('Could not find a matching community issue for this grammar point');
+                    warnings.push('Could not find a matching community issue for this grammar point');
                   }
                 }
               } catch (e) {
@@ -412,6 +413,9 @@ jobs:
             }
 
             let commentBody;
+            const warningList = warnings.length > 0
+              ? `\n\n**Warnings:**\n${warnings.map(function(w) { return '- ⚠️ ' + w; }).join('\n')}`
+              : '';
             if (isValid) {
               let issueNote = '';
               if (foundIssue && !linkedIssue) {
@@ -422,10 +426,10 @@ jobs:
               
               const checks = t.passed.checks.map(function(c) { return '- ✅ ' + c; }).join('\n');
               
-              commentBody = `${t.passed.title}\n\n${t.passed.body.replace('{type}', validationType)}\n\n**Checks passed:**\n${checks}${issueNote}\n\n${t.passed.footer}`;
+              commentBody = `${t.passed.title}\n\n${t.passed.body.replace('{type}', validationType)}\n\n**Checks passed:**\n${checks}${issueNote}${warningList}\n\n${t.passed.footer}`;
             } else {
               const errorList = errors.map(function(e) { return '- ❌ ' + e; }).join('\n');
-              commentBody = `${t.failed.title}\n\n${t.failed.body.replace('{type}', validationType)}\n\n${errorList}\n\n${t.failed.footer}`;
+              commentBody = `${t.failed.title}\n\n${t.failed.body.replace('{type}', validationType)}\n\n${errorList}${warningList}\n\n${t.failed.footer}`;
             }
 
             await github.rest.issues.createComment({
